@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Arka plan rengi - Karanlık -->
+    <item android:drawable="@android:color/black"/>
+    
+    <!-- Logo - merkeze yerleştirilmiş, boyut ayarlanmış -->
+    <item
+        android:width="200dp"
+        android:height="200dp"
+        android:gravity="center">
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo"
+            android:antialias="true"
+            android:filter="true"/>
+    </item>
+    
+    <!-- Versiyon - alt kısımda -->
+    <item android:gravity="bottom|center_horizontal">
+        <inset android:insetBottom="48dp">
+            <shape>
+                <size android:width="200dp" android:height="40dp"/>
+            </shape>
+        </inset>
+    </item>
+</layer-list>

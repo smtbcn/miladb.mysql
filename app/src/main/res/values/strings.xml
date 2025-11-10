@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Uygulama Adı -->
+    <string name="app_name">MySQL</string>
+    <string name="app_version">v2025.11.09.1</string>
+    
+    <!-- Bağlantı Ekranı -->
+    <string name="connection_title">Veritabanı Bağlantısı</string>
+    <string name="host_label">Sunucu Adresi</string>
+    <string name="host_hint">örn: 192.168.1.100</string>
+    <string name="port_label">Port</string>
+    <string name="port_hint">3306</string>
+    <string name="username_label">Kullanıcı Adı</string>
+    <string name="username_hint">root</string>
+    <string name="password_label">Şifre</string>
+    <string name="password_hint">••••••••</string>
+    <string name="database_label">Veritabanı (Opsiyonel)</string>
+    <string name="database_hint">veritabanı adı</string>
+    <string name="ssl_label">SSL Kullan</string>
+    <string name="ssh_label">SSH Tüneli Kullan</string>
+    <string name="ssh_host_label">SSH Sunucu</string>
+    <string name="ssh_port_label">SSH Port</string>
+    <string name="ssh_port_hint">22</string>
+    <string name="ssh_username_label">SSH Kullanıcı Adı</string>
+    <string name="ssh_password_label">SSH Şifre</string>
+    <string name="ssh_private_key_label">SSH Private Key</string>
+    <string name="connect_button">Bağlan</string>
+    <string name="connecting">Bağlanıyor…</string>
+    
+    <!-- Veritabanı Listesi -->
+    <string name="database_list_title">Veritabanları</string>
+    <string name="loading_databases">Veritabanları yükleniyor…</string>
+    <string name="no_databases">Veritabanı bulunamadı</string>
+    
+    <!-- Tablo Listesi -->
+    <string name="table_list_title">Tablolar</string>
+    <string name="loading_tables">Tablolar yükleniyor…</string>
+    <string name="no_tables">Tablo bulunamadı</string>
+    <string name="new_table_button">Yeni Tablo</string>
+    <string name="sql_editor_button">SQL Editörü</string>
+    <string name="delete_table">Tabloyu Sil</string>
+    <string name="delete_table_confirm_title">Tablo Silme Onayı</string>
+    <string name="delete_table_confirm_message">Bu tabloyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.\n\nOnaylamak için tablo adını yazın:</string>
+    
+    <!-- Tablo Verileri -->
+    <string name="table_data_title">Tablo Verileri</string>
+    <string name="loading_data">Veriler yükleniyor…</string>
+    <string name="no_data">Veri bulunamadı</string>
+    <string name="new_row_button">Yeni Kayıt</string>
+    <string name="export_excel">Excel Olarak Dışa Aktar</string>
+    <string name="export_csv">CSV Olarak Dışa Aktar</string>
+    <string name="edit_row">Düzenle</string>
+    <string name="delete_row">Sil</string>
+    <string name="delete_row_confirm_title">Kayıt Silme Onayı</string>
+    <string name="delete_row_confirm_message">Bu kaydı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</string>
+    
+    <!-- Satır Düzenleme -->
+    <string name="edit_row_title">Kayıt Düzenle</string>
+    <string name="add_row_title">Yeni Kayıt Ekle</string>
+    <string name="save_button">Kaydet</string>
+    <string name="cancel_button">İptal</string>
+    <string name="saving">Kaydediliyor…</string>
+    
+    <!-- Tablo Oluşturma -->
+    <string name="create_table_title">Yeni Tablo Oluştur</string>
+    <string name="table_name_label">Tablo Adı</string>
+    <string name="table_name_hint">tablo_adi</string>
+    <string name="add_column_button">Kolon Ekle</string>
+    <string name="column_name_label">Kolon Adı</string>
+    <string name="column_type_label">Tip</string>
+    <string name="column_length_label">Uzunluk</string>
+    <string name="column_nullable_label">NULL</string>
+    <string name="column_primary_key_label">Primary Key</string>
+    <string name="column_auto_increment_label">Auto Increment</string>
+    <string name="remove_column_button">Kaldır</string>
+    <string name="create_button">Oluştur</string>
+    <string name="creating">Oluşturuluyor…</string>
+    
+    <!-- SQL Editörü -->
+    <string name="query_editor_title">SQL Editörü</string>
+    <string name="query_hint">SQL sorgunuzu buraya yazın…</string>
+    <string name="execute_button">Çalıştır</string>
+    <string name="executing">Çalıştırılıyor…</string>
+    <string name="query_history_title">Sorgu Geçmişi</string>
+    <string name="no_history">Henüz sorgu geçmişi yok</string>
+    <string name="affected_rows">%d satır etkilendi</string>
+    
+    <!-- Genel -->
+    <string name="back_button">Geri</string>
+    <string name="yes">Evet</string>
+    <string name="no">Hayır</string>
+    <string name="ok">Tamam</string>
+    <string name="error">Hata</string>
+    <string name="success">Başarılı</string>
+    <string name="warning">Uyarı</string>
+    
+    <!-- Hata Mesajları -->
+    <string name="error_connection_failed">Bağlantı başarısız: %s</string>
+    <string name="error_ssh_failed">SSH tüneli oluşturulamadı: %s</string>
+    <string name="error_database_failed">Veritabanı hatası: %s</string>
+    <string name="error_export_failed">Dışa aktarma başarısız: %s</string>
+    <string name="error_unknown">Bilinmeyen hata: %s</string>
+    <string name="error_empty_field">Bu alan boş bırakılamaz</string>
+    <string name="error_invalid_port">Geçersiz port numarası</string>
+    <string name="error_no_primary_key">En az bir primary key gerekli</string>
+    <string name="error_no_columns">En az bir kolon gerekli</string>
+    
+    <!-- Başarı Mesajları -->
+    <string name="success_connected">Bağlantı başarılı</string>
+    <string name="success_row_updated">Kayıt güncellendi</string>
+    <string name="success_row_inserted">Kayıt eklendi</string>
+    <string name="success_row_deleted">Kayıt silindi</string>
+    <string name="success_table_created">Tablo oluşturuldu</string>
+    <string name="success_table_deleted">Tablo silindi</string>
+    <string name="success_query_executed">Sorgu başarıyla çalıştırıldı</string>
+    <string name="success_exported">Dosya dışa aktarıldı: %s</string>
+</resources>

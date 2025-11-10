@@ -1,0 +1,126 @@
+package com.miladb.data.source.connection
+
+import android.content.Context
+import android.content.SharedPreferences
+import com.miladb.data.model.SavedConnection
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.UUID
+
+/**
+ * Bağlantı bilgilerini SharedPreferences'ta saklayan sınıf.
+ * 
+ * NOT: Şifreler GÜVENLİK nedeniyle saklanmaz!
+ */
+class ConnectionStorage(context: Context) {
+    
+    private val prefs: SharedPreferences = context.getSharedPreferences(
+        "miladb_connections",
+        Context.MODE_PRIVATE
+    )
+    
+    companion object {
+        private const val KEY_CONNECTIONS = "saved_connections"
+    }
+    
+    /**
+     * Tüm kaydedilmiş bağlantıları getirir.
+     */
+    suspend fun getSavedConnections(): List<SavedConnection> = withContext(Dispatchers.IO) {
+        try {
+            val json = prefs.getString(KEY_CONNECTIONS, "[]") ?: "[]"
+            val jsonArray = JSONArray(json)
+            
+            (0 until jsonArray.length()).map { index ->
+                val obj = jsonArray.getJSONObject(index)
+                SavedConnection(
+                    id = obj.getString("id"),
+                    name = obj.getString("name"),
+                    host = obj.getString("host"),
+                    port = obj.getInt("port"),
+                    username = obj.getString("username"),
+                    password = obj.optString("password").ifEmpty { null },
+                    database = obj.optString("database").ifEmpty { null },
+                    useSsl = obj.optBoolean("useSsl", false),
+                    useSsh = obj.optBoolean("useSsh", false),
+                    sshHost = obj.optString("sshHost").ifEmpty { null },
+                    sshPort = if (obj.has("sshPort")) obj.getInt("sshPort") else null,
+                    sshUsername = obj.optString("sshUsername").ifEmpty { null },
+                    sshPassword = obj.optString("sshPassword").ifEmpty { null }
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    /**
+     * Yeni bağlantı kaydeder.
+     */
+    suspend fun saveConnection(connection: SavedConnection): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val connections = getSavedConnections().toMutableList()
+            
+            // Aynı ID varsa güncelle, yoksa ekle
+            val existingIndex = connections.indexOfFirst { it.id == connection.id }
+            if (existingIndex >= 0) {
+                connections[existingIndex] = connection
+            } else {
+                connections.add(connection)
+            }
+            
+            saveConnectionsList(connections)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * Bağlantıyı siler.
+     */
+    suspend fun deleteConnection(id: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val connections = getSavedConnections().toMutableList()
+            connections.removeAll { it.id == id }
+            saveConnectionsList(connections)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * Bağlantı listesini kaydeder.
+     */
+    private fun saveConnectionsList(connections: List<SavedConnection>) {
+        val jsonArray = JSONArray()
+        connections.forEach { conn ->
+            val obj = JSONObject().apply {
+                put("id", conn.id)
+                put("name", conn.name)
+                put("host", conn.host)
+                put("port", conn.port)
+                put("username", conn.username)
+                conn.password?.let { put("password", it) }
+                conn.database?.let { put("database", it) }
+                put("useSsl", conn.useSsl)
+                put("useSsh", conn.useSsh)
+                conn.sshHost?.let { put("sshHost", it) }
+                conn.sshPort?.let { put("sshPort", it) }
+                conn.sshUsername?.let { put("sshUsername", it) }
+                conn.sshPassword?.let { put("sshPassword", it) }
+            }
+            jsonArray.put(obj)
+        }
+        
+        prefs.edit().putString(KEY_CONNECTIONS, jsonArray.toString()).apply()
+    }
+    
+    /**
+     * Yeni benzersiz ID oluşturur.
+     */
+    fun generateId(): String = UUID.randomUUID().toString()
+}
