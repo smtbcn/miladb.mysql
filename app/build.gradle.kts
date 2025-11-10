@@ -5,16 +5,16 @@ plugins {
 
 android {
     namespace = "com.miladb"
-    compileSdk = 34
+    compileSdk = 35
 
     // Sabit versiyon değerleri
-    val VERSION_CODE = 1
-    val VERSION_NAME = "2025.11.09.1"
+    val VERSION_CODE = 2
+    val VERSION_NAME = "2025.11.09.2"
 
     defaultConfig {
         applicationId = "com.miladb.mysql"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = VERSION_CODE
         versionName = VERSION_NAME
 
@@ -26,7 +26,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

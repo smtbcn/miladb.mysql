@@ -8,7 +8,7 @@
     
     <!-- Splash Screen Theme - Karanlık -->
     <style name="Theme.MilaDB.Splash" parent="Theme.MilaDB">
-        <item name="android:windowBackground">@drawable/splash_background_dark</item>
+        <item name="android:windowBackground">@drawable/splash_background</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
