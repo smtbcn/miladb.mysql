@@ -27,13 +27,14 @@ class ConnectionStorage(context: Context) {
     
     /**
      * Tüm kaydedilmiş bağlantıları getirir.
+     * İlk kullanımda demo bağlantısını otomatik olarak ekler.
      */
     suspend fun getSavedConnections(): List<SavedConnection> = withContext(Dispatchers.IO) {
         try {
             val json = prefs.getString(KEY_CONNECTIONS, "[]") ?: "[]"
             val jsonArray = JSONArray(json)
             
-            (0 until jsonArray.length()).map { index ->
+            val connections = (0 until jsonArray.length()).map { index ->
                 val obj = jsonArray.getJSONObject(index)
                 SavedConnection(
                     id = obj.getString("id"),
@@ -50,7 +51,26 @@ class ConnectionStorage(context: Context) {
                     sshUsername = obj.optString("sshUsername").ifEmpty { null },
                     sshPassword = obj.optString("sshPassword").ifEmpty { null }
                 )
+            }.toMutableList()
+            
+            // İlk kullanımda demo bağlantısını ekle
+            if (connections.isEmpty()) {
+                val demoConnection = SavedConnection(
+                    id = "demo_connection_001",
+                    name = "Demo Sunucu (sql7.freesqldatabase.com)",
+                    host = "sql7.freesqldatabase.com",
+                    port = 3306,
+                    username = "sql7807105",
+                    password = "hnKJ5TrMwM",
+                    database = "sql7807105",
+                    useSsl = false,
+                    useSsh = false
+                )
+                connections.add(demoConnection)
+                saveConnectionsList(connections)
             }
+            
+            connections
         } catch (e: Exception) {
             emptyList()
         }

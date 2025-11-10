@@ -514,6 +514,39 @@ fun ConnectionScreen(
                             }
                         }
                         
+                        // Demo bağlantısı açıklaması (sadece demo bağlantısı varsa göster)
+                        if (savedConnections.any { it.id == "demo_connection_001" }) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "Demo sunucu ile uygulamayı deneyebilirsiniz. Kendi sunucularınızı ekleyerek devam edin.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
                         // Bağlantı kartları
                         items(savedConnections) { savedConn ->
                                 SavedConnectionCard(
@@ -653,10 +686,30 @@ fun SavedConnectionCard(
             )
             
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = connection.name,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = connection.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    // Demo bağlantısı için özel etiket
+                    if (connection.id == "demo_connection_001") {
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            modifier = Modifier.padding(start = 4.dp)
+                        ) {
+                            Text(
+                                text = "DEMO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = "${connection.username}@${maskIpAddress(connection.host)}:${connection.port}",
                     style = MaterialTheme.typography.bodySmall,

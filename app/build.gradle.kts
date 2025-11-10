@@ -8,8 +8,8 @@ android {
     compileSdk = 35
 
     // Sabit versiyon değerleri
-    val VERSION_CODE = 2
-    val VERSION_NAME = "2025.11.09.2"
+    val VERSION_CODE = 3
+    val VERSION_NAME = "2025.11.11.3"
 
     defaultConfig {
         applicationId = "com.miladb.mysql"
