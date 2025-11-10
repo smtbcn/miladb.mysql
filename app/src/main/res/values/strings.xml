@@ -2,7 +2,7 @@
 <resources>
     <!-- Uygulama Adı -->
     <string name="app_name">MySQL</string>
-    <string name="app_version">v2025.11.09.1</string>
+    <!-- Versiyon BuildConfig'den alınıyor -->
     
     <!-- Bağlantı Ekranı -->
     <string name="connection_title">Veritabanı Bağlantısı</string>
