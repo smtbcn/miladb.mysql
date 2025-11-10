@@ -98,7 +98,15 @@ fun ConnectionScreen(
     }
     
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { 
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(Alignment.Bottom)
+                    .padding(bottom = 16.dp)
+            )
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.connection_title)) },
@@ -551,9 +559,9 @@ fun ConnectionScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = stringResource(R.string.app_version),
+                                        text = "v${com.miladb.BuildConfig.VERSION_NAME}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.Black.copy(alpha = 0.5f)
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                     )
                                 }
                             }
