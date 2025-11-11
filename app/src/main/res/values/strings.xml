@@ -75,6 +75,12 @@
     <string name="remove_column_button">Kaldır</string>
     <string name="create_button">Oluştur</string>
     <string name="creating">Oluşturuluyor…</string>
+
+    <!-- Tablo Düzenleme -->
+    <string name="edit_table_button">Tabloyu düzenle</string>
+    <string name="edit_table_title">Tabloyu Düzenle</string>
+    <string name="add_new_column_button">Yeni Kolon Ekle</string>
+    <string name="save_changes_button">Değişiklikleri Kaydet</string>
     
     <!-- SQL Editörü -->
     <string name="query_editor_title">SQL Editörü</string>

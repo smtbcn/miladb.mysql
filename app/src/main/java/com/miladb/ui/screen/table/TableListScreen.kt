@@ -43,6 +43,7 @@ fun TableListScreen(
     onTableSelected: (String) -> Unit,
     onCreateTable: () -> Unit,
     onSqlEditor: () -> Unit,
+    onEditTable: (String) -> Unit,
     onBackPressed: () -> Unit
 ) {
     val tableListState by viewModel.tableListState.collectAsState()
@@ -183,6 +184,21 @@ fun TableListScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
+
+                    // Düzenleme bağlantısı
+                    TextButton(
+                        onClick = {
+                            val t = tableToDelete
+                            if (t != null) {
+                                showDeleteDialog = false
+                                tableToDelete = null
+                                deleteConfirmText = ""
+                                onEditTable(t)
+                            }
+                        }
+                    ) {
+                        Text(stringResource(id = R.string.edit_table_button))
+                    }
                 }
             },
             confirmButton = {

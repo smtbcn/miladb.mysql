@@ -44,6 +44,9 @@ sealed class Screen(val route: String) {
     object QueryEditor : Screen("query_editor/{database}") {
         fun createRoute(database: String) = "query_editor/$database"
     }
+    object EditTable : Screen("edit_table/{database}/{table}") {
+        fun createRoute(database: String, table: String) = "edit_table/$database/$table"
+    }
 }
 
 /**
@@ -143,6 +146,9 @@ fun MilaDbNavGraph(
                 onSqlEditor = {
                     navController.navigate(Screen.QueryEditor.createRoute(database))
                 },
+                onEditTable = { table ->
+                    navController.navigate(Screen.EditTable.createRoute(database, table))
+                },
                 onBackPressed = {
                     // Eğer belirli bir veritabanı ile bağlanıldıysa, direkt bağlantı ekranına dön
                     if (JdbcConnectionManager.isConnectedWithDatabase()) {
@@ -228,6 +234,30 @@ fun MilaDbNavGraph(
                 tableViewModel = tableViewModel,
                 database = database,
                 onCreated = {
+                    navController.popBackStack()
+                },
+                onCancelled = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Edit Table Screen
+        composable(
+            route = Screen.EditTable.route,
+            arguments = listOf(
+                navArgument("database") { type = NavType.StringType },
+                navArgument("table") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val database = backStackEntry.arguments?.getString("database") ?: return@composable
+            val table = backStackEntry.arguments?.getString("table") ?: return@composable
+
+            EditTableScreen(
+                tableViewModel = tableViewModel,
+                database = database,
+                table = table,
+                onSaved = {
                     navController.popBackStack()
                 },
                 onCancelled = {

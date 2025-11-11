@@ -357,6 +357,45 @@ class DatabaseRepository(
             Result.failure(Exception(error.toUserMessage(), e))
         }
     }
+
+    /**
+     * Mevcut tabloya bir veya daha fazla kolon ekler.
+     *
+     * @param database Veritabanı adı
+     * @param table Tablo adı
+     * @param columns Eklenecek kolon tanımları
+     * @return Result<Unit> Başarı durumu
+     */
+    suspend fun addColumns(
+        database: String,
+        table: String,
+        columns: List<ColumnDefinition>
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val connection = connectionManager.getConnection()
+                ?: return@withContext Result.failure(Exception("Bağlantı yok"))
+
+            if (columns.isEmpty()) {
+                return@withContext Result.failure(Exception("Eklenecek kolon yok"))
+            }
+
+            val addClauses = columns.joinToString(", ") { col ->
+                "ADD COLUMN ${buildColumnDefinition(col)}"
+            }
+
+            val sql = "ALTER TABLE `$database`.`$table` $addClauses"
+
+            connection.createStatement().use { statement ->
+                statement.executeUpdate(sql)
+            }
+
+            Result.success(Unit)
+
+        } catch (e: Exception) {
+            val error = e.toMilaDbError()
+            Result.failure(Exception(error.toUserMessage(), e))
+        }
+    }
     
     /**
      * Özel SQL sorgusu çalıştırır.

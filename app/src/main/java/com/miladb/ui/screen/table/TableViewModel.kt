@@ -226,6 +226,25 @@ class TableViewModel(
             }
         }
     }
+
+    /**
+     * Mevcut tabloya kolon(lar) ekler.
+     */
+    fun addColumns(database: String, table: String, columns: List<ColumnDefinition>) {
+        viewModelScope.launch {
+            _tableOperationState.value = TableOperationUiState.Processing
+
+            val result = repository.addColumns(database, table, columns)
+
+            _tableOperationState.value = if (result.isSuccess) {
+                TableOperationUiState.Success("Kolon(lar) eklendi")
+            } else {
+                TableOperationUiState.Error(
+                    result.exceptionOrNull()?.message ?: "Kolon(lar) eklenemedi"
+                )
+            }
+        }
+    }
     
     /**
      * Satır işlemi durumunu sıfırlar.
