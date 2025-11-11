@@ -11,7 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.intl.LocaleList
 import com.miladb.R
+import android.util.Log
 import com.miladb.data.model.RowOperationUiState
 import com.miladb.data.model.TableStructureUiState
 import com.miladb.ui.component.LoadingIndicator
@@ -180,9 +188,48 @@ fun RowEditorScreen(
                             }
                         }
                         
+                        // Klavye seçenekleri: Metin alanlarında otomatik düzeltmeyi kapat
+                        val typeUpper = column.type.uppercase()
+                        // 'VARCHAR(255)' gibi varyasyonları da yakalamak için contains kullan
+                        val isTextType =
+                            typeUpper.contains("VARCHAR") ||
+                            typeUpper.contains("CHAR") ||
+                            typeUpper.contains("TEXT") ||
+                            typeUpper.contains("JSON")
+
+                        val isNumericType =
+                            typeUpper.contains("INT") ||
+                            typeUpper.contains("DECIMAL") ||
+                            typeUpper.contains("FLOAT") ||
+                            typeUpper.contains("DOUBLE")
+
+                        val keyboardOptions = when {
+                            isTextType -> KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                capitalization = KeyboardCapitalization.None,
+                                autoCorrect = false
+                            )
+                            isNumericType -> KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                autoCorrect = false
+                            )
+                            else -> KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                capitalization = KeyboardCapitalization.None,
+                                autoCorrect = false
+                            )
+                        }
+
                         OutlinedTextField(
                             value = value,
-                            onValueChange = { fieldValues[column.name] = it },
+                            onValueChange = {
+                                // Debug: IME’den gelen ham karakterleri gözlemlemek için
+                                try {
+                                    val codes = it.toCharArray().map { ch -> ch.code }
+                                    Log.d("RowEditorInput", "col=${column.name} value='$it' codes=$codes")
+                                } catch (_: Exception) {}
+                                fieldValues[column.name] = it
+                            },
                             label = { Text(column.name) },
                             supportingText = {
                                 Text(
@@ -206,10 +253,15 @@ fun RowEditorScreen(
                                     Text(column.defaultValue!!)
                                 }
                             },
+                            // Türkçe yazımı için locale’u açıkça belirt
+                            textStyle = LocalTextStyle.current.copy(
+                                localeList = LocaleList(Locale("tr"))
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                             enabled = isEnabled,
                             singleLine = column.type.uppercase() !in listOf("TEXT", "LONGTEXT", "MEDIUMTEXT"),
-                            maxLines = if (column.type.uppercase() in listOf("TEXT", "LONGTEXT", "MEDIUMTEXT")) 5 else 1
+                            maxLines = if (column.type.uppercase() in listOf("TEXT", "LONGTEXT", "MEDIUMTEXT")) 5 else 1,
+                            keyboardOptions = keyboardOptions
                         )
                     }
                     
