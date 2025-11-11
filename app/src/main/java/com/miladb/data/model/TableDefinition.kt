@@ -8,7 +8,8 @@ package com.miladb.data.model
  */
 data class TableDefinition(
     val tableName: String,
-    val columns: List<ColumnDefinition>
+    val columns: List<ColumnDefinition>,
+    val tableCollation: String? = null
 )
 
 /**
