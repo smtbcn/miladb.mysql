@@ -42,6 +42,14 @@ fun CreateTableScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     
     var tableName by remember { mutableStateOf("") }
+    var tableCollation by remember { mutableStateOf("utf8mb4_general_ci") }
+    var collationExpanded by remember { mutableStateOf(false) }
+    val collations = listOf(
+        "utf8mb4_general_ci",
+        "utf8mb4_unicode_ci",
+        "utf8mb4_turkish_ci",
+        "utf8mb4_bin"
+    )
     val columns = remember { mutableStateListOf<ColumnState>() }
     var showValidationError by remember { mutableStateOf(false) }
     var validationErrorMessage by remember { mutableStateOf("") }
@@ -116,6 +124,39 @@ fun CreateTableScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+
+            // Collation seçimi (dropdown)
+            ExposedDropdownMenuBox(
+                expanded = collationExpanded,
+                onExpandedChange = { collationExpanded = it },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = tableCollation,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Collation") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = collationExpanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    singleLine = true
+                )
+
+                ExposedDropdownMenu(
+                    expanded = collationExpanded,
+                    onDismissRequest = { collationExpanded = false }
+                ) {
+                    collations.forEach { coll ->
+                        DropdownMenuItem(
+                            text = { Text(coll) },
+                            onClick = {
+                                tableCollation = coll
+                                collationExpanded = false
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                        )
+                    }
+                }
+            }
             
             Divider()
             
@@ -196,7 +237,8 @@ fun CreateTableScreen(
                         // Tablo oluştur
                         val tableDefinition = TableDefinition(
                             tableName = tableName,
-                            columns = columns.map { it.toColumnDefinition() }
+                            columns = columns.map { it.toColumnDefinition() },
+                            tableCollation = tableCollation.ifBlank { null }
                         )
                         tableViewModel.createTable(database, tableDefinition)
                     },
