@@ -295,7 +295,7 @@ class DatabaseRepository(
             
             // CREATE TABLE sorgusu oluştur
             val columnDefinitions = tableDefinition.columns.joinToString(", ") { column ->
-                buildColumnDefinition(column)
+                buildColumnDefinition(column, tableDefinition.tableCollation)
             }
             
             // Primary key'leri bul
@@ -309,8 +309,13 @@ class DatabaseRepository(
                 ""
             }
             
+            val tableOptions = tableDefinition.tableCollation?.let { coll ->
+                val charset = coll.substringBefore("_")
+                " DEFAULT CHARSET=$charset COLLATE=$coll"
+            } ?: ""
+
             val sql = "CREATE TABLE `$database`.`${tableDefinition.tableName}` " +
-                    "($columnDefinitions$primaryKeyClause)"
+                    "($columnDefinitions$primaryKeyClause)" + tableOptions
             
             connection.createStatement().use { statement ->
                 statement.executeUpdate(sql)
@@ -528,7 +533,7 @@ class DatabaseRepository(
      * @param column Kolon tanımı
      * @return SQL kolon tanımı string
      */
-    private fun buildColumnDefinition(column: ColumnDefinition): String {
+    private fun buildColumnDefinition(column: ColumnDefinition, tableCollation: String? = null): String {
         val parts = mutableListOf<String>()
         
         // Kolon adı ve tipi
@@ -552,6 +557,13 @@ class DatabaseRepository(
             parts.add("DEFAULT '${column.defaultValue}'")
         }
         
+        // String tiplerinde kolasyon uygula
+        val typeUpper = column.type.uppercase()
+        val isStringType = typeUpper in setOf("CHAR", "VARCHAR", "TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT")
+        if (isStringType && tableCollation != null) {
+            parts.add("COLLATE $tableCollation")
+        }
+
         return parts.joinToString(" ")
     }
 }
