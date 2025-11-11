@@ -84,9 +84,12 @@ object JdbcConnectionManager {
                 setProperty("connectTimeout", "10000") // 10 saniye
                 setProperty("socketTimeout", "30000")  // 30 saniye
                 
-                // Karakter seti
+                // Karakter seti ve Unicode
+                // Not: Bazı sürücüler 'utf8mb4' değerini desteklemez; 'UTF-8' kullanın.
                 setProperty("characterEncoding", "UTF-8")
                 setProperty("useUnicode", "true")
+                // Bağlantı kolasyonu (sunucu destekliyorsa)
+                setProperty("connectionCollation", "utf8mb4_general_ci")
             }
             
             // Bağlantı kur
