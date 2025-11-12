@@ -660,17 +660,8 @@ class DatabaseRepository(
             parts.add("AUTO_INCREMENT")
         }
 
-        // Varsayılan değer belirtilmemişse tarih/zaman tipleri için otomatik default uygula
-        if (column.defaultValue == null) {
-            when {
-                isDateTimeType && typeUpper in setOf("TIMESTAMP", "DATETIME") -> {
-                    parts.add("DEFAULT CURRENT_TIMESTAMP")
-                    parts.add("ON UPDATE CURRENT_TIMESTAMP")
-                }
-                typeUpper == "DATE" -> parts.add("DEFAULT CURRENT_DATE")
-                typeUpper == "TIME" -> parts.add("DEFAULT CURRENT_TIME")
-            }
-        }
+        // Varsayılan değer belirtilmemişse herhangi bir otomatik DEFAULT eklemeyelim.
+        // (Önceden DATETIME/TIMESTAMP için CURRENT_TIMESTAMP ekleniyordu; sürümler ve sql_mode farkları sorun yaratabiliyor.)
 
         // DEFAULT değer - tip uyumlu ve güvenli biçimde uygula
         column.defaultValue?.let { raw ->
@@ -690,15 +681,16 @@ class DatabaseRepository(
                             parts.add("DEFAULT $dv")
                         }
                     }
-                    // Tarih/zaman ifadeleri: CURRENT_TIMESTAMP, NOW(), CURRENT_DATE vb.
+                    // Tarih/zaman ifadeleri
                     isDateTimeType -> {
                         val upper = dv.uppercase()
-                        val allowedTokens = setOf(
-                            "CURRENT_TIMESTAMP", "NOW()", "CURRENT_DATE", "CURDATE()", "CURRENT_TIME", "CURTIME()"
-                        )
-                        if (upper in allowedTokens) {
+                        // Sadece TIMESTAMP/DATETIME için fonksiyonel default'a izin ver
+                        val tsLike = typeUpper in setOf("TIMESTAMP", "DATETIME")
+                        val allowedTsTokens = setOf("CURRENT_TIMESTAMP", "NOW()")
+                        if (tsLike && upper in allowedTsTokens) {
                             parts.add("DEFAULT $upper")
                         } else {
+                            // Diğer tüm tarih/zaman tipleri için literal olarak uygula
                             parts.add("DEFAULT '${dv.replace("'", "''")}'")
                         }
                     }
