@@ -574,32 +574,75 @@ class DatabaseRepository(
      */
     private fun buildColumnDefinition(column: ColumnDefinition, tableCollation: String? = null): String {
         val parts = mutableListOf<String>()
-        
-        // Kolon adı ve tipi
-        val typeWithLength = if (column.length != null) {
+
+        val typeUpper = column.type.uppercase()
+        val isStringType = typeUpper in setOf("CHAR", "VARCHAR")
+        val isTextType = typeUpper in setOf("TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT")
+        val isBlobType = typeUpper in setOf("BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB")
+        val isJsonType = typeUpper == "JSON"
+        val isIntegerType = typeUpper in setOf("TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIGINT")
+        val isDecimalType = typeUpper == "DECIMAL"
+        val isFloatDoubleType = typeUpper in setOf("FLOAT", "DOUBLE")
+        val isDateTimeType = typeUpper in setOf("DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR")
+
+        // Tip ve uzunluk (yalnızca uygun tiplerde uzunluk belirt)
+        val supportsLength = typeUpper in setOf("VARCHAR", "CHAR", "DECIMAL")
+        val typeWithLength = if (supportsLength && column.length != null) {
             "${column.type}(${column.length})"
         } else {
             column.type
         }
         parts.add("`${column.name}` $typeWithLength")
-        
-        // NULL/NOT NULL
-        parts.add(if (column.nullable) "NULL" else "NOT NULL")
-        
-        // AUTO_INCREMENT
-        if (column.isAutoIncrement) {
+
+        // NULL/NOT NULL (AUTO_INCREMENT için NOT NULL zorunlu)
+        val nullable = if (column.isAutoIncrement && isIntegerType) false else column.nullable
+        parts.add(if (nullable) "NULL" else "NOT NULL")
+
+        // AUTO_INCREMENT (yalnızca tamsayı tiplerinde geçerli)
+        if (column.isAutoIncrement && isIntegerType) {
             parts.add("AUTO_INCREMENT")
         }
-        
-        // DEFAULT değer
-        if (column.defaultValue != null) {
-            parts.add("DEFAULT '${column.defaultValue}'")
+
+        // DEFAULT değer - tip uyumlu ve güvenli biçimde uygula
+        column.defaultValue?.let { raw ->
+            val dv = raw.trim()
+
+            // TEXT/BLOB/JSON tiplerinde DEFAULT desteklenmez → atla
+            if (!(isTextType || isBlobType || isJsonType)) {
+                when {
+                    // DEFAULT NULL yalnızca nullable ise uygula
+                    dv.equals("NULL", ignoreCase = true) -> {
+                        if (nullable) parts.add("DEFAULT NULL")
+                    }
+                    // Sayısal tipler için quotes kullanma, geçerli sayıysa uygula
+                    (isIntegerType || isDecimalType || isFloatDoubleType) -> {
+                        val numericRegex = Regex("^-?\\d+(?:\\.\\d+)?$")
+                        if (numericRegex.matches(dv)) {
+                            parts.add("DEFAULT $dv")
+                        }
+                    }
+                    // Tarih/zaman ifadeleri: CURRENT_TIMESTAMP, NOW(), CURRENT_DATE vb.
+                    isDateTimeType -> {
+                        val upper = dv.uppercase()
+                        val allowedTokens = setOf(
+                            "CURRENT_TIMESTAMP", "NOW()", "CURRENT_DATE", "CURDATE()", "CURRENT_TIME", "CURTIME()"
+                        )
+                        if (upper in allowedTokens) {
+                            parts.add("DEFAULT $upper")
+                        } else {
+                            parts.add("DEFAULT '${dv.replace("'", "''")}'")
+                        }
+                    }
+                    // CHAR/VARCHAR için string literal olarak uygula
+                    isStringType -> {
+                        parts.add("DEFAULT '${dv.replace("'", "''")}'")
+                    }
+                }
+            }
         }
-        
-        // String tiplerinde kolasyon uygula
-        val typeUpper = column.type.uppercase()
-        val isStringType = typeUpper in setOf("CHAR", "VARCHAR", "TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT")
-        if (isStringType && tableCollation != null) {
+
+        // String ve TEXT tiplerinde kolasyon uygula
+        if ((isStringType || isTextType) && tableCollation != null) {
             parts.add("COLLATE $tableCollation")
         }
 
