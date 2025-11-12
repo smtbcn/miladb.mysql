@@ -1,5 +1,7 @@
 package com.miladb.ui.screen.table
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -23,6 +26,9 @@ import android.util.Log
 import com.miladb.data.model.RowOperationUiState
 import com.miladb.data.model.TableStructureUiState
 import com.miladb.ui.component.LoadingIndicator
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 
 /**
  * Satır düzenleme/ekleme ekranı.
@@ -114,8 +120,11 @@ fun RowEditorScreen(
         }
     }
     
+    val focusManager = LocalFocusManager.current
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets.ime,
         topBar = {
             TopAppBar(
                 title = {
@@ -154,7 +163,11 @@ fun RowEditorScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { focusManager.clearFocus() },
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Her kolon için input field
@@ -269,7 +282,9 @@ fun RowEditorScreen(
                     
                     // Butonlar
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .imePadding(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
