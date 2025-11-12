@@ -133,21 +133,39 @@ class ConnectionStorage(context: Context) {
      */
     suspend fun importConnectionsJson(json: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            val jsonArray = JSONArray(json)
+            // JSON'u temizle ve olası BOM/zero-width karakterleri çıkar
+            val sanitized = json.trim()
+                .replace("\uFEFF", "") // BOM
+                .replace("\u200B", "") // zero-width space
+                .replace("\u2060", "") // word joiner
+
+            // Dizi veya { connections: [] } formatını destekle
+            val jsonArray = if (sanitized.startsWith("{")) {
+                val obj = JSONObject(sanitized)
+                if (obj.has("connections")) obj.getJSONArray("connections") else JSONArray()
+            } else {
+                JSONArray(sanitized)
+            }
             val imported = mutableListOf<SavedConnection>()
             for (i in 0 until jsonArray.length()) {
                 val obj = jsonArray.getJSONObject(i)
                 val id = obj.optString("id").ifBlank { generateId() }
                 val name = obj.getString("name")
                 val host = obj.getString("host")
-                val port = if (obj.has("port")) obj.getInt("port") else 3306
+                val port = when {
+                    obj.has("port") && obj.opt("port") is Number -> obj.getInt("port")
+                    else -> obj.optString("port").toIntOrNull() ?: 3306
+                }
                 val username = obj.getString("username")
                 val password = obj.optString("password").ifEmpty { null }
                 val database = obj.optString("database").ifEmpty { null }
                 val useSsl = obj.optBoolean("useSsl", false)
                 val useSsh = obj.optBoolean("useSsh", false)
                 val sshHost = obj.optString("sshHost").ifEmpty { null }
-                val sshPort = if (obj.has("sshPort")) obj.getInt("sshPort") else null
+                val sshPort = when {
+                    obj.has("sshPort") && obj.opt("sshPort") is Number -> obj.getInt("sshPort")
+                    else -> obj.optString("sshPort").toIntOrNull()
+                }
                 val sshUsername = obj.optString("sshUsername").ifEmpty { null }
                 val sshPassword = obj.optString("sshPassword").ifEmpty { null }
 
