@@ -18,8 +18,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -41,6 +43,7 @@ fun ConnectionScreen(
     val savedConnections by viewModel.savedConnections.collectAsState()
     val sshEnabled by viewModel.sshEnabled.collectAsState()
     val sslEnabled by viewModel.sslEnabled.collectAsState()
+    val exportJson by viewModel.exportJson.collectAsState()
     
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -73,6 +76,11 @@ fun ConnectionScreen(
     
     // Form visibility - varsayılan olarak kapalı
     var showNewConnectionForm by remember { mutableStateOf(false) }
+    
+    // Import/Export dialogs
+    var showExportDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importJsonText by remember { mutableStateOf("") }
     
     // Bağlantı durumunu izle
     LaunchedEffect(connectionState) {
@@ -115,7 +123,20 @@ fun ConnectionScreen(
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White,
                     actionIconContentColor = Color.White
-                )
+                ),
+                actions = {
+                    IconButton(onClick = {
+                        viewModel.exportConnections()
+                        showExportDialog = true
+                    }) {
+                        Icon(Icons.Default.FileDownload, contentDescription = "Dışa Aktar")
+                    }
+                    IconButton(onClick = {
+                        showImportDialog = true
+                    }) {
+                        Icon(Icons.Default.FileUpload, contentDescription = "İçe Aktar")
+                    }
+                }
             )
         },
 
@@ -601,8 +622,88 @@ fun ConnectionScreen(
                         }
                     }
                 }
-            }
         }
+    }
+    
+    // Export dialog
+    if (showExportDialog) {
+        val clipboard = LocalClipboardManager.current
+        AlertDialog(
+            onDismissRequest = {
+                showExportDialog = false
+                viewModel.clearExportJson()
+            },
+            title = { Text("Bağlantıları Dışa Aktar (JSON)") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Aşağıdaki JSON'u kopyalayarak dışa aktarabilirsiniz.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = exportJson ?: "[]",
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp),
+                        maxLines = 10
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    clipboard.setText(AnnotatedString(exportJson ?: "[]"))
+                    showExportDialog = false
+                    viewModel.clearExportJson()
+                }) { Text("Kopyala") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showExportDialog = false
+                    viewModel.clearExportJson()
+                }) { Text("Kapat") }
+            }
+        )
+    }
+    
+    // Import dialog
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text("Bağlantıları İçe Aktar (JSON)") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "JSON formatında bir dizi bağlantı girin.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = importJsonText,
+                        onValueChange = { importJsonText = it },
+                        placeholder = { Text("[ { \"name\": \"Sunucu\", \"host\": \"127.0.0.1\", ... } ]") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 160.dp),
+                        maxLines = 12
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.importConnectionsFromJson(importJsonText) { ok ->
+                        if (ok) {
+                            importJsonText = ""
+                            showImportDialog = false
+                        }
+                    }
+                }) { Text("İçe Aktar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportDialog = false }) { Text("İptal") }
+            }
+        )
+    }
     
     // Delete confirmation dialog
     if (showDeleteDialog && connectionToDelete != null) {

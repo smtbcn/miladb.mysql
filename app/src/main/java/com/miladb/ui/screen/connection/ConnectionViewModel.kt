@@ -43,6 +43,10 @@ class ConnectionViewModel(
     private val _sslEnabled = MutableStateFlow(false)
     val sslEnabled: StateFlow<Boolean> = _sslEnabled.asStateFlow()
     
+    // Export/Import state
+    private val _exportJson = MutableStateFlow<String?>(null)
+    val exportJson: StateFlow<String?> = _exportJson.asStateFlow()
+    
     init {
         loadSavedConnections()
     }
@@ -180,6 +184,33 @@ class ConnectionViewModel(
         viewModelScope.launch {
             connectionStorage.deleteConnection(id)
             loadSavedConnections()
+        }
+    }
+    
+    /**
+     * Dışa aktarma JSON'unu üretir ve state'e koyar.
+     */
+    fun exportConnections() {
+        _exportJson.value = connectionStorage.exportConnectionsJson()
+    }
+    
+    /**
+     * Export JSON state'ini temizler.
+     */
+    fun clearExportJson() {
+        _exportJson.value = null
+    }
+    
+    /**
+     * Verilen JSON'u içe aktarır, listeyi günceller.
+     */
+    fun importConnectionsFromJson(json: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val ok = connectionStorage.importConnectionsJson(json)
+            if (ok) {
+                loadSavedConnections()
+            }
+            onResult(ok)
         }
     }
     

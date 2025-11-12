@@ -113,6 +113,71 @@ class ConnectionStorage(context: Context) {
     }
     
     /**
+     * Kayıtlı tüm bağlantıları ham JSON metni olarak dışa aktarır.
+     * Şifre de dahil mevcut veriler olduğu gibi döndürülür.
+     */
+    fun exportConnectionsJson(): String {
+        return prefs.getString(KEY_CONNECTIONS, "[]") ?: "[]"
+    }
+    
+    /**
+     * Bağlantıları JSON dizisi formatında içe aktarır. Var olan listeyi verilen
+     * içerikle değiştirir. Eksik alanlar için varsayılanlar uygulanır.
+     *
+     * Beklenen format: [
+     *   {"id":"...","name":"...","host":"...","port":3306,
+     *    "username":"...","password":"...","database":"...",
+     *    "useSsl":false,"useSsh":false,
+     *    "sshHost":"...","sshPort":22,"sshUsername":"...","sshPassword":"..."}
+     * ]
+     */
+    suspend fun importConnectionsJson(json: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val jsonArray = JSONArray(json)
+            val imported = mutableListOf<SavedConnection>()
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val id = obj.optString("id").ifBlank { generateId() }
+                val name = obj.getString("name")
+                val host = obj.getString("host")
+                val port = if (obj.has("port")) obj.getInt("port") else 3306
+                val username = obj.getString("username")
+                val password = obj.optString("password").ifEmpty { null }
+                val database = obj.optString("database").ifEmpty { null }
+                val useSsl = obj.optBoolean("useSsl", false)
+                val useSsh = obj.optBoolean("useSsh", false)
+                val sshHost = obj.optString("sshHost").ifEmpty { null }
+                val sshPort = if (obj.has("sshPort")) obj.getInt("sshPort") else null
+                val sshUsername = obj.optString("sshUsername").ifEmpty { null }
+                val sshPassword = obj.optString("sshPassword").ifEmpty { null }
+
+                imported.add(
+                    SavedConnection(
+                        id = id,
+                        name = name,
+                        host = host,
+                        port = port,
+                        username = username,
+                        password = password,
+                        database = database,
+                        useSsl = useSsl,
+                        useSsh = useSsh,
+                        sshHost = sshHost,
+                        sshPort = sshPort,
+                        sshUsername = sshUsername,
+                        sshPassword = sshPassword
+                    )
+                )
+            }
+            // Mevcut listeyi tamamen değiştir
+            saveConnectionsList(imported)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
      * Bağlantı listesini kaydeder.
      */
     private fun saveConnectionsList(connections: List<SavedConnection>) {

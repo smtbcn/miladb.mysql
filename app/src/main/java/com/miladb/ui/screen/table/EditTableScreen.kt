@@ -107,56 +107,7 @@ fun EditTableScreen(
                 )
             )
         },
-        contentWindowInsets = WindowInsets.ime,
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .imePadding(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onCancelled,
-                    modifier = Modifier.weight(1f)
-                ) { Text(text = "İptal") }
-
-                Button(
-                    onClick = {
-                        // Validasyon: en az bir yeni kolon eklenmiş olmalı ve adları boş olmamalı
-                        if (newColumns.isEmpty()) {
-                            // Kullanıcıya bilgi
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("En az bir yeni kolon ekleyin")
-                            }
-                            return@Button
-                        }
-                        if (newColumns.any { it.name.isBlank() }) {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Tüm yeni kolonların adı olmalı")
-                            }
-                            return@Button
-                        }
-
-                        val defs = newColumns.map { it.toColumnDefinition() }
-                        tableViewModel.addColumns(database, table, defs)
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = tableOperationState !is com.miladb.data.model.TableOperationUiState.Processing
-                ) {
-                    if (tableOperationState is com.miladb.data.model.TableOperationUiState.Processing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Kaydediliyor…")
-                    } else {
-                        Text("Değişiklikleri Kaydet")
-                    }
-                }
-            }
-        }
+        contentWindowInsets = WindowInsets.ime
     ) { paddingValues ->
         val focusManager = LocalFocusManager.current
         Column(
@@ -207,6 +158,54 @@ fun EditTableScreen(
                     onRemove = { newColumns.removeAt(index) },
                     shouldFocus = (focusTargetIndex == index)
                 )
+            }
+
+            // Butonlar - sayfa içeriğine dahil
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onCancelled,
+                    modifier = Modifier.weight(1f)
+                ) { Text(text = "İptal") }
+
+                Button(
+                    onClick = {
+                        // Validasyon: en az bir yeni kolon eklenmiş olmalı ve adları boş olmamalı
+                        if (newColumns.isEmpty()) {
+                            // Kullanıcıya bilgi
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("En az bir yeni kolon ekleyin")
+                            }
+                            return@Button
+                        }
+                        if (newColumns.any { it.name.isBlank() }) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Tüm yeni kolonların adı olmalı")
+                            }
+                            return@Button
+                        }
+
+                        val defs = newColumns.map { it.toColumnDefinition() }
+                        tableViewModel.addColumns(database, table, defs)
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = tableOperationState !is com.miladb.data.model.TableOperationUiState.Processing
+                ) {
+                    if (tableOperationState is com.miladb.data.model.TableOperationUiState.Processing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Kaydediliyor…")
+                    } else {
+                        Text("Değişiklikleri Kaydet")
+                    }
+                }
             }
         }
     }
