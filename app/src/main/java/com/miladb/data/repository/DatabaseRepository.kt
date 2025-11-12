@@ -603,6 +603,18 @@ class DatabaseRepository(
             parts.add("AUTO_INCREMENT")
         }
 
+        // Varsayılan değer belirtilmemişse tarih/zaman tipleri için otomatik default uygula
+        if (column.defaultValue == null) {
+            when {
+                isDateTimeType && typeUpper in setOf("TIMESTAMP", "DATETIME") -> {
+                    parts.add("DEFAULT CURRENT_TIMESTAMP")
+                    parts.add("ON UPDATE CURRENT_TIMESTAMP")
+                }
+                typeUpper == "DATE" -> parts.add("DEFAULT CURRENT_DATE")
+                typeUpper == "TIME" -> parts.add("DEFAULT CURRENT_TIME")
+            }
+        }
+
         // DEFAULT değer - tip uyumlu ve güvenli biçimde uygula
         column.defaultValue?.let { raw ->
             val dv = raw.trim()
