@@ -1,5 +1,7 @@
 package com.miladb.ui.screen.connection
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -19,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -32,6 +35,7 @@ import com.miladb.data.model.ConnectionUiState
 import com.miladb.data.model.SavedConnection
 import com.miladb.data.model.SshConfig
 import com.miladb.ui.component.LoadingIndicator
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -77,10 +81,53 @@ fun ConnectionScreen(
     // Form visibility - varsayılan olarak kapalı
     var showNewConnectionForm by remember { mutableStateOf(false) }
     
-    // Import/Export dialogs
-    var showExportDialog by remember { mutableStateOf(false) }
-    var showImportDialog by remember { mutableStateOf(false) }
-    var importJsonText by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    
+    // Create Document (export)
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val json = viewModel.connectionStorage.exportConnectionsJson()
+                context.contentResolver.openOutputStream(uri)?.use { os ->
+                    os.write(json.toByteArray(Charsets.UTF_8))
+                }
+                scope.launch {
+                    snackbarHostState.showSnackbar("JSON dışa aktarıldı")
+                }
+            } catch (e: Exception) {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Dışa aktarma hatası: ${e.message ?: ""}")
+                }
+            }
+        }
+    }
+    
+    // Open Document (import)
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val json = context.contentResolver.openInputStream(uri)?.use { ins ->
+                    ins.readBytes().toString(Charsets.UTF_8)
+                } ?: ""
+                viewModel.importConnectionsFromJson(json) { ok ->
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            if (ok) "Bağlantılar başarıyla içe aktarıldı" else "Geçersiz JSON: lütfen formatı kontrol edin"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                scope.launch {
+                    snackbarHostState.showSnackbar("İçe aktarma hatası: ${e.message ?: ""}")
+                }
+            }
+        }
+    }
     
     // Bağlantı durumunu izle
     LaunchedEffect(connectionState) {
@@ -126,13 +173,12 @@ fun ConnectionScreen(
                 ),
                 actions = {
                     IconButton(onClick = {
-                        viewModel.exportConnections()
-                        showExportDialog = true
+                        createDocumentLauncher.launch("MilaDB_Connections.json")
                     }) {
                         Icon(Icons.Default.FileDownload, contentDescription = "Dışa Aktar")
                     }
                     IconButton(onClick = {
-                        showImportDialog = true
+                        openDocumentLauncher.launch(arrayOf("application/json"))
                     }) {
                         Icon(Icons.Default.FileUpload, contentDescription = "İçe Aktar")
                     }
@@ -625,85 +671,7 @@ fun ConnectionScreen(
         }
     }
     
-    // Export dialog
-    if (showExportDialog) {
-        val clipboard = LocalClipboardManager.current
-        AlertDialog(
-            onDismissRequest = {
-                showExportDialog = false
-                viewModel.clearExportJson()
-            },
-            title = { Text("Bağlantıları Dışa Aktar (JSON)") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Aşağıdaki JSON'u kopyalayarak dışa aktarabilirsiniz.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    OutlinedTextField(
-                        value = exportJson ?: "[]",
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 120.dp),
-                        maxLines = 10
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    clipboard.setText(AnnotatedString(exportJson ?: "[]"))
-                    showExportDialog = false
-                    viewModel.clearExportJson()
-                }) { Text("Kopyala") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showExportDialog = false
-                    viewModel.clearExportJson()
-                }) { Text("Kapat") }
-            }
-        )
-    }
-    
-    // Import dialog
-    if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            title = { Text("Bağlantıları İçe Aktar (JSON)") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "JSON formatında bir dizi bağlantı girin.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    OutlinedTextField(
-                        value = importJsonText,
-                        onValueChange = { importJsonText = it },
-                        placeholder = { Text("[ { \"name\": \"Sunucu\", \"host\": \"127.0.0.1\", ... } ]") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 160.dp),
-                        maxLines = 12
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.importConnectionsFromJson(importJsonText) { ok ->
-                        if (ok) {
-                            importJsonText = ""
-                            showImportDialog = false
-                        }
-                    }
-                }) { Text("İçe Aktar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) { Text("İptal") }
-            }
-        )
-    }
+    // Paste-based dialogs kaldırıldı; dosya tabanlı içe/dışa aktarma kullanılmaktadır.
     
     // Delete confirmation dialog
     if (showDeleteDialog && connectionToDelete != null) {
