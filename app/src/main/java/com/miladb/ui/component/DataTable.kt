@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +39,8 @@ import com.miladb.data.model.TableData
  * @param tableData Tablo verileri
  * @param onRowClick Satır tıklama callback (opsiyonel)
  * @param onRowLongPress Satır uzun basma callback (opsiyonel)
+ * @param onEndReached Listenin sonuna yaklaşıldığında çağrılır (opsiyonel)
+ * @param endReachedThreshold Son öğeden kaç öğe önce tetikleneceği (varsayılan 3)
  * @param modifier Modifier (opsiyonel)
  */
 @Composable
@@ -45,6 +48,8 @@ fun DataTable(
     tableData: TableData,
     onRowClick: ((rowIndex: Int, rowData: List<String>) -> Unit)? = null,
     onRowLongPress: ((rowIndex: Int, rowData: List<String>) -> Unit)? = null,
+    onEndReached: (() -> Unit)? = null,
+    endReachedThreshold: Int = 3,
     modifier: Modifier = Modifier
 ) {
     // Dinamik kolon genişlikleri - içeriğe göre
@@ -105,12 +110,28 @@ fun DataTable(
         )
         
         // Veri satırları - Modern tablo görünümü
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f),
-            contentPadding = PaddingValues(0.dp)
-        ) {
+    val listState = rememberLazyListState()
+
+    // Listenin sonuna yaklaşıldığında yükleme tetikle
+    // Not: Sık tetiklenmeyi engellemek için çağrı tarafında yükleme sırasında tekrar çağrılar yönetilmelidir.
+    androidx.compose.runtime.LaunchedEffect(
+        listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index,
+        listState.layoutInfo.totalItemsCount
+    ) {
+        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+        val total = listState.layoutInfo.totalItemsCount
+        if (onEndReached != null && total > 0 && lastVisibleIndex >= total - 1 - endReachedThreshold) {
+            onEndReached()
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .weight(1f),
+        state = listState,
+        contentPadding = PaddingValues(0.dp)
+    ) {
             itemsIndexed(tableData.rows) { rowIndex, row ->
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(

@@ -197,6 +197,11 @@ fun TableDataScreen(
                             rowToDelete = Pair(rowIndex, rowData)
                             showDeleteDialog = true
                         },
+                        onEndReached = {
+                            if (tableViewModel.canLoadMore()) {
+                                tableViewModel.loadMoreTableData()
+                            }
+                        },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }

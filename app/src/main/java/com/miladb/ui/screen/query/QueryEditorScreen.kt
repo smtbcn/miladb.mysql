@@ -36,7 +36,8 @@ import com.miladb.ui.component.LoadingIndicator
 fun QueryEditorScreen(
     queryViewModel: QueryViewModel,
     database: String,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    onEditRow: (columns: List<String>, rowData: List<String>, database: String, table: String) -> Unit
 ) {
     val queryState by queryViewModel.queryState.collectAsState()
     val queryHistory by queryViewModel.queryHistory.collectAsState()
@@ -196,7 +197,19 @@ fun QueryEditorScreen(
                         when (val result = state.result) {
                             is QueryResult.SelectResult -> {
                                 // SELECT sonucu - tablo göster
-                                DataTable(tableData = result.tableData)
+                                DataTable(
+                                    tableData = result.tableData,
+                                    onRowClick = { _, rowData ->
+                                        val db = result.tableData.databaseName ?: database
+                                        val tbl = result.tableData.tableName ?: return@DataTable
+                                        onEditRow(result.tableData.columns, rowData, db, tbl)
+                                    },
+                                    onEndReached = {
+                                        if (queryViewModel.canLoadMore()) {
+                                            queryViewModel.loadMoreSelect()
+                                        }
+                                    }
+                                )
                             }
                             is QueryResult.ModifyResult -> {
                                 // INSERT/UPDATE/DELETE sonucu

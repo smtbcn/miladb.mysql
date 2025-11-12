@@ -98,15 +98,41 @@ class DatabaseRepository(
             val connection = connectionManager.getConnection()
                 ?: return@withContext Result.failure(Exception("Bağlantı yok"))
             
+            // Varsayılan ilk sayfa (200 kayıt)
+            return@withContext getTableDataPaged(database, table, limit = 200, offset = 0)
+            
+        } catch (e: Exception) {
+            val error = e.toMilaDbError()
+            Result.failure(Exception(error.toUserMessage(), e))
+        }
+    }
+
+    /**
+     * Belirtilen tablonun verilerini sayfalı getirir.
+     * 
+     * @param database Veritabanı adı
+     * @param table Tablo adı
+     * @param limit Sayfa başı kayıt sayısı
+     * @param offset Başlangıç offset’i
+     */
+    suspend fun getTableDataPaged(
+        database: String,
+        table: String,
+        limit: Int,
+        offset: Int
+    ): Result<TableData> = withContext(Dispatchers.IO) {
+        try {
+            val connection = connectionManager.getConnection()
+                ?: return@withContext Result.failure(Exception("Bağlantı yok"))
+
             connection.createStatement().use { statement ->
                 statement.executeQuery(
-                    "SELECT * FROM `$database`.`$table` LIMIT 200"
+                    "SELECT * FROM `$database`.`$table` LIMIT $limit OFFSET $offset"
                 ).use { resultSet ->
                     val tableData = resultSetToTableData(resultSet, table, database)
                     Result.success(tableData)
                 }
             }
-            
         } catch (e: Exception) {
             val error = e.toMilaDbError()
             Result.failure(Exception(error.toUserMessage(), e))
@@ -434,10 +460,14 @@ class DatabaseRepository(
                     if (isSelect) {
                         // SELECT/SHOW/DESCRIBE sorgusu - sonuç döndürür
                         statement.executeQuery(trimmedQuery).use { resultSet ->
+                            val (parsedTable, parsedDb) = parseTableAndDatabase(trimmedQuery)
+                            val connectedDb = connectionManager.getConnectedDatabase()
+                            val databaseName = parsedDb ?: connectedDb ?: "custom_query"
+                            val tableName = parsedTable ?: "query_result"
                             val tableData = resultSetToTableData(
                                 resultSet,
-                                "query_result",
-                                "custom_query"
+                                tableName,
+                                databaseName
                             )
                             lastResult = QueryResult.SelectResult(tableData)
                         }
@@ -455,6 +485,33 @@ class DatabaseRepository(
         } catch (e: Exception) {
             val error = e.toMilaDbError()
             Result.failure(Exception(error.toUserMessage(), e))
+        }
+    }
+
+    /**
+     * Basit bir SELECT sorgusundan tablo ve veritabanı adını parse eder.
+     * Örnekler:
+     * - SELECT * FROM `db`.`users`
+     * - SELECT id FROM users u
+     * - SELECT ... FROM db.users
+     * 
+     * Dönen değer Pair<tableName?, databaseName?>
+     */
+    private fun parseTableAndDatabase(query: String): Pair<String?, String?> {
+        // FROM sonrası ilk tanımı yakala, alias ve join’leri görmezden gel
+        val regex = Regex("(?i)from\\s+([`\"]?\\w+[`\"]?)(?:\\.([`\"]?\\w+[`\"]?))?")
+        val match = regex.find(query)
+        return if (match != null) {
+            val first = match.groupValues.getOrNull(1)?.trim('`', '"')
+            val second = match.groupValues.getOrNull(2)?.trim('`', '"')
+            if (!second.isNullOrBlank()) {
+                // db.table biçimi
+                Pair(second, first)
+            } else {
+                Pair(first, null)
+            }
+        } else {
+            Pair(null, null)
         }
     }
     

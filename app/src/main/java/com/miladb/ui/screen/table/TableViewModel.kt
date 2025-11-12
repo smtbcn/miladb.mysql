@@ -49,6 +49,14 @@ class TableViewModel(
     // Selected Row Data (for editing)
     private val _selectedRowData = MutableStateFlow<Map<String, String>?>(null)
     val selectedRowData: StateFlow<Map<String, String>?> = _selectedRowData.asStateFlow()
+
+    // Pagination State
+    private var currentDatabase: String? = null
+    private var currentTable: String? = null
+    private var pageLimit: Int = 200
+    private var currentOffset: Int = 0
+    private var isLoadingMore: Boolean = false
+    private var hasMore: Boolean = true
     
     /**
      * Tablo verilerini yükler.
@@ -59,11 +67,21 @@ class TableViewModel(
     fun loadTableData(database: String, table: String) {
         viewModelScope.launch {
             _tableDataState.value = TableDataUiState.Loading
-            
-            val result = repository.getTableData(database, table)
-            
+
+            // Initialize pagination
+            currentDatabase = database
+            currentTable = table
+            currentOffset = 0
+            hasMore = true
+
+            val result = repository.getTableDataPaged(database, table, pageLimit, currentOffset)
+
             _tableDataState.value = if (result.isSuccess) {
-                TableDataUiState.Success(result.getOrNull()!!)
+                val data = result.getOrNull()!!
+                // İlk yüklemede offseti sonraki sayfaya ayarla
+                currentOffset = data.rows.size
+                hasMore = data.rows.size >= pageLimit
+                TableDataUiState.Success(data)
             } else {
                 TableDataUiState.Error(
                     result.exceptionOrNull()?.message ?: "Tablo verileri yüklenemedi"
@@ -71,6 +89,38 @@ class TableViewModel(
             }
         }
     }
+
+    /**
+     * Mevcut tablo için sonraki sayfayı yükler ve mevcut veriye ekler.
+     */
+    fun loadMoreTableData() {
+        if (isLoadingMore || !hasMore) return
+        val database = currentDatabase ?: return
+        val table = currentTable ?: return
+
+        viewModelScope.launch {
+            isLoadingMore = true
+            val result = repository.getTableDataPaged(database, table, pageLimit, currentOffset)
+            if (result.isSuccess) {
+                val more = result.getOrNull()!!
+                val currentState = _tableDataState.value
+                if (currentState is TableDataUiState.Success) {
+                    val merged = currentState.tableData.copy(
+                        rows = currentState.tableData.rows + more.rows
+                    )
+                    _tableDataState.value = TableDataUiState.Success(merged)
+                    currentOffset += more.rows.size
+                    hasMore = more.rows.size >= pageLimit
+                }
+            }
+            isLoadingMore = false
+        }
+    }
+
+    /**
+     * Dışarıya sayfalandırma meta bilgisi sağlar.
+     */
+    fun canLoadMore(): Boolean = hasMore && !isLoadingMore
     
     /**
      * Tablo yapısını yükler.

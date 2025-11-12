@@ -280,6 +280,10 @@ fun MilaDbNavGraph(
                 database = database,
                 onBackPressed = {
                     navController.popBackStack()
+                },
+                onEditRow = { columns, rowData, db, table ->
+                    tableViewModel.setSelectedRowData(columns, rowData)
+                    navController.navigate(Screen.RowEditor.createRoute(db, table, false))
                 }
             )
         }
